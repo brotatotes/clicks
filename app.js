@@ -29,6 +29,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 
+app.use('/index', indexRouter);
+
 app.post('/clicked', (req, res) => {
   const timestamp = (new Date()).toISOString();
   console.log(timestamp);
