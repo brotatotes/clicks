@@ -15,7 +15,17 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING).then(client => {
   console.log('Connected to MongoDB database!');
 
   app.locals.db = client.db('clicks');
-})
+  app.locals.collection = app.locals.db.collection('clicks');
+  setCount();
+  const changeStream = app.locals.db.watch();
+  changeStream.on("change", next => {
+    setCount();
+  });
+});
+
+async function setCount() {
+  app.locals.count = await app.locals.collection.countDocuments();
+}
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -33,23 +43,20 @@ app.post('/clicked', (req, res) => {
   const timestamp = (new Date()).toISOString();
   console.log(timestamp);
 
-  const clicksCollection = app.locals.db.collection('clicks');    
-
-  clicksCollection.insertOne({ timestamp: timestamp}).then(result => {
+  app.locals.collection.insertOne({ timestamp: timestamp }).then(result => {
     console.log(result);
     res.sendStatus(201);
   }).catch(error => console.error(error));
-});
+}); 
 
 app.get('/clicks', (req, res) => {
-  const clicksCollection = app.locals.db.collection('clicks');
-  clicksCollection.countDocuments().then(result => {
-    console.log(result);
-    res.send({ count: result});
-  }).catch(error => {
-    return console.error(error);
-  });
+  res.send({ count: app.locals.count })
 });
+
+app.get('/pollingInterval', (req, res) => {
+  console.log(process.env.POLLING_INTERVAL);
+  res.send({ pollingInterval: parseInt(process.env.POLLING_INTERVAL) });
+})
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

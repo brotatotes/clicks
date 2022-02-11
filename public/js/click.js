@@ -8,7 +8,7 @@ function clicked() {
     }
     throw new Error('Request failed.');
   }).catch(error => {
-    console.log(error);
+    console.error(error);
   });
 }
 
@@ -24,10 +24,24 @@ function setClicks() {
     document.getElementById('button').innerHTML = count;
   })
   .catch(error => {
-    console.log(error);
+    console.error(error);
   });
+}
+
+async function getPollingInterval() {
+  return await fetch('/pollingInterval', { method: 'GET' }).then(response => {
+    if (response.ok) {
+      return response.json();
+    }
+    throw new Error('Request failed.');
+  }).then(data => {
+    const pollingInterval = data.pollingInterval;
+    return pollingInterval;
+  }).catch(error => console.error(error));
 }
 
 setClicks();
 
-setInterval(setClicks, 250);
+getPollingInterval().then(result => {
+  setInterval(setClicks, result);
+}).catch(error => console.error(error));
