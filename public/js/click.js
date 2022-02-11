@@ -20,7 +20,7 @@ function setClicks() {
     throw new Error('Request failed.');
   })
   .then(data => {
-    const count = data[0].count;
+    const count = data.count;
     document.getElementById('button').innerHTML = count;
   })
   .catch(error => {
@@ -30,4 +30,4 @@ function setClicks() {
 
 setClicks();
 
-setInterval(setClicks, 1000);
+setInterval(setClicks, 250);

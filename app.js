@@ -1,21 +1,21 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const MongoClient = require('mongodb').MongoClient;
+require('dotenv').config();
 
 var indexRouter = require('./routes/index');
 
 var app = express();
 
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('clicks.db', (err) => {
-  if (err) {
-    return console.error(err.message);
-  }
+// connect to database
+MongoClient.connect(process.env.MONGODB_CONNECTION_STRING).then(client => {
+  console.log('Connected to MongoDB database!');
 
-  console.log('Connected to SQlite database.');
-});
+  app.locals.db = client.db('clicks');
+})
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -32,28 +32,22 @@ app.use('/', indexRouter);
 app.post('/clicked', (req, res) => {
   const timestamp = (new Date()).toISOString();
   console.log(timestamp);
-  console.log(db);
 
-  db.run("INSERT INTO clicks(Timestamp) VALUES (?)", [timestamp], err => {
-    if (err) {
-      return console.log(err.message);
-    }
+  const clicksCollection = app.locals.db.collection('clicks');    
 
-    console.log(`An entry has been inserted with Timestamp ${timestamp}`)
-  });
-
-  res.sendStatus(201);
-})
+  clicksCollection.insertOne({ timestamp: timestamp}).then(result => {
+    console.log(result);
+    res.sendStatus(201);
+  }).catch(error => console.error(error));
+});
 
 app.get('/clicks', (req, res) => {
-  let sql = "SELECT COUNT(*) AS count FROM clicks";
-
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      return console.log(err.message);
-    }
-
-    res.send(rows);
+  const clicksCollection = app.locals.db.collection('clicks');
+  clicksCollection.countDocuments().then(result => {
+    console.log(result);
+    res.send({ count: result});
+  }).catch(error => {
+    return console.error(error);
   });
 });
 
